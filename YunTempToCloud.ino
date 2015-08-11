@@ -3,6 +3,7 @@
  */
 #include <Bridge.h>
 #include <Parse.h>
+#include <FileIO.h>
 #include "CloudKeys.h"
 #include "DHT.h"
 #include "measures.h"
@@ -29,11 +30,14 @@ void setup() {
   Bridge.begin();
   digitalWrite(13, HIGH);
   
-  // Initialize Parse - add a CloudKeys.h file with your cloud keys; these are an example:
+  // Initialize Parse - add a CloudKeys.h file with your own cloud keys; these are an example:
   // #define APPLICATIONID  "WGDJynlEEf4OwVDjiDENtFh09OsBIXI5dkjfj4h2j"
   // #define CLIENTKEY  "dtp9OI5LExUwD52VOQlzB1uU5xqdpqLqfjejdjcjd"
   Parse.begin(APPLICATIONID, CLIENTKEY);
-
+  
+   // Setup File IO for logging
+  FileSystem.begin();
+  
   delay(2000);
 }
 
@@ -114,7 +118,20 @@ void logln(String message) {
  * Log stuff 
  */
 void log(String message) {
-  
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  // The FileSystem card is mounted at the following "/mnt/FileSystema1"
+  File dataFile = FileSystem.open("/mnt/sd/datalog.txt", FILE_APPEND);
+
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println(message);
+    dataFile.close();
+  }  
+  // if the file isn't open, pop up an error:
+  else {
+    // error: sorry, no other log to write to (yet)!
+  } 
 }
 
 String now() {
