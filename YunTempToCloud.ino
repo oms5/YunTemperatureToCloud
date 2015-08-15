@@ -4,6 +4,7 @@
 #include <Bridge.h>
 #include <Parse.h>
 #include <FileIO.h>
+#include <MemoryFree.h>
 #include "CloudKeys.h"
 #include "DHT.h"
 #include "measures.h"
@@ -12,12 +13,12 @@
 #define DHTTYPE DHT11   // DHT 11
 #define POLLDELAY 600000 // Sample every 10 minues
 
+
 // Initialize DHT sensor.
 // Note that older versions of this library took an optional third parameter to
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 DHT dht(DHTPIN, DHTTYPE);
-String startString;
 
 void setup() {
   
@@ -30,7 +31,7 @@ void setup() {
   Bridge.begin();
   digitalWrite(13, HIGH);
   
-  // Initialize Parse - add a CloudKeys.h file with your own cloud keys; these are an example:
+  // Initialize Parse - add a CloudKeys.h file with your own  cloud keys; these are an example:
   // #define APPLICATIONID  "WGDJynlEEf4OwVDjiDENtFh09OsBIXI5dkjfj4h2j"
   // #define CLIENTKEY  "dtp9OI5LExUwD52VOQlzB1uU5xqdpqLqfjejdjcjd"
   Parse.begin(APPLICATIONID, CLIENTKEY);
@@ -42,6 +43,9 @@ void setup() {
 }
 
 void loop() {
+  
+  log("freeMemory()=");
+  logln(freeMemoryString());
   
   MEASURES readings = readDhtMeasurements();
   if (readings.error != "") {
@@ -86,7 +90,7 @@ MEASURES readDhtMeasurements() {
  */
 void publishToParse(MEASURES readings) {
   
-  ParseObjectCreate create;
+  ParseObjectCreate create = ParseObjectCreate();
   create.setClassName("AmbientReading");
   create.add("location", "MasterBedRoom");
   create.add("locationType", "Indoor");
@@ -94,14 +98,14 @@ void publishToParse(MEASURES readings) {
   create.add("humidity", readings.humidity);
   ParseResponse response = create.send();
   
-  logln("\nResponse for saving a TestObject:");
+  logln("\nResponse for saving object:");
   log(response.getJSONBody());
-  if (!response.getErrorCode()) {
+  if (response.getErrorCode() == 0) {
      String objectId = response.getString("objectId");
-     log("Test object id:");
+     log("object id:");
      logln(objectId);
   } else {
-     logln("Failed to save the object");
+     logln("Failed to save the object:");
   }
   response.close(); // Do not forget to free the resource 
 }
@@ -114,7 +118,7 @@ void logln(String message) {
 }
 
 /**
- * TODO: Log to file system on Linino
+ * Log to file system on Linino
  * Log stuff 
  */
 void log(String message) {
@@ -125,7 +129,7 @@ void log(String message) {
 
   // if the file is available, write to it:
   if (dataFile) {
-    dataFile.println(message);
+    dataFile.print(message);
     dataFile.close();
   }  
   // if the file isn't open, pop up an error:
@@ -144,4 +148,11 @@ String now() {
     timeString += c;
   }
   return timeString;
+}
+
+String freeMemoryString() {
+  String memory = "";
+  int free = freeMemory();
+  memory += free;
+  return memory;
 }
